@@ -75,9 +75,11 @@ class EvolutionaryTechnique(SearchTechnique):
     def selection(self):
         """return a list of parent configurations to use"""
         if random.random() < self.crossover_rate:
+            self.driver.manipulator_calls.append("Crossover")
             return [self.select(),
                     self.select()]
         else:
+            self.driver.manipulator_calls.append("NoCrossover")
             return [self.select()]
 
     @abc.abstractmethod
@@ -96,8 +98,10 @@ class GreedySelectionMixin(object):
         """return a single random parent configuration"""
         if (self.driver.best_result is not None and
                 self.driver.best_result.state == 'OK'):
+            self.driver.manipulator_calls.append("GreedySelection")
             return self.driver.best_result.configuration.data
         else:
+            self.driver.manipulator_calls.append("RandomSelection")
             return self.manipulator.random()
 
 
@@ -115,9 +119,12 @@ class NormalMutationMixin(object):
         mutate single parameter of cfg in place
         """
         if param.is_primitive():
+            self.driver.manipulator_calls.append("NormalMutation")
             param.op1_normal_mutation(cfg, self.sigma)
         else:
-            random.choice(param.manipulators(cfg))(cfg)
+            manip = random.choice(param.manipulators(cfg))
+            self.driver.manipulator_calls.append(manip.__name__)
+            manip(cfg)
 
 
 class CrossoverMixin(object):

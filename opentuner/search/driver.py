@@ -15,6 +15,7 @@ from opentuner.resultsdb.models import BanditSubTechnique
 from opentuner.resultsdb.models import Configuration
 from opentuner.resultsdb.models import DesiredResult
 from opentuner.resultsdb.models import Result
+from opentuner.resultsdb.models import Manipulators
 from opentuner.search import plugin
 from opentuner.search import technique
 from opentuner.search.bandittechniques import AUCBanditMetaTechnique
@@ -56,6 +57,9 @@ class SearchDriver(DriverBase):
         self.wait_for_results = self.tuning_run_main.results_wait
         self.commit = self.tuning_run_main.commit
         self.extra_criteria = extra_criteria
+
+        # log manipulator calls each generation
+        self.manipulator_calls = []
 
         self.generation = 0
         self.test_count = 0
@@ -101,6 +105,9 @@ class SearchDriver(DriverBase):
                 log.error('no such file for --seed-configuration %s', cfg_filename)
 
         self.plugins.sort(key = lambda x: x.priority)
+
+    def register_manipulator_call(self, mc):
+        self.manipulator_calls.append(mc)
 
     def add_plugin(self, p):
         if p in self.plugins:
@@ -188,6 +195,14 @@ class SearchDriver(DriverBase):
                           .order_by(DesiredResult.request_date)
                           .limit(1).all())
             self.session.add(dr)
+
+            for mc in self.manipulator_calls:
+                m = Manipulators(configuration = dr.configuration,
+                                 manipulator = mc)
+                self.session.add(m)
+
+            self.manipulator_calls.clear()
+
             if len(duplicates):
                 if not self.args.no_dups:
                     log.warning("duplicate configuration request #%d %s/%s %s",

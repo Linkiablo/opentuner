@@ -144,6 +144,13 @@ class Configuration(Base):
 Index('ix_configuration_custom1', Configuration.program_id, Configuration.hash)
 
 
+class Manipulators(Base):
+    configuration_id = Column(ForeignKey(Configuration.id))
+    configuration = relationship(Configuration)
+
+    manipulator = Column(String(64))
+
+
 class MachineClass(Base):
     name = Column(String(128))
 
